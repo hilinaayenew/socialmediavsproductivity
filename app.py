@@ -99,7 +99,7 @@ df_full = load_data()
 st.title("Productivity & Well-being Research")
 st.markdown("""
 This research investigates digital habits across different professions.
-Data Source: **Mahdi Mashayekhi (Kaggle)**
+Data Source: **Mahdi Mashayekhi (Kaggle) : https://www.kaggle.com/datasets/mahdimashayekhi/social-media-vs-productivity**
 """)
 st.markdown("---")
 
