@@ -6,8 +6,8 @@ import plotly.graph_objects as go
 
 # --- PAGE SETUP ---
 st.set_page_config(
-    page_title="Productivity Insight",
-    page_icon="🚀",
+    page_title="Productivity & Well-being Research",
+    page_icon="📝",
     layout="wide"
 )
 
@@ -21,58 +21,58 @@ st.markdown("""
     }
     
     .main {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        background-color: #f8fbfd;
     }
     
+    /* Style the tabs to be more obvious */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+        background-color: #e9ecef;
+        padding: 10px 10px 0 10px;
+        border-radius: 15px 15px 0 0;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: #dee2e6;
+        border-radius: 10px 10px 0 0;
+        gap: 1px;
+        padding: 10px 25px;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: #34495e !important;
+        color: white !important;
+        border-bottom: 3px solid #e74c3c !important;
+    }
+
     .stMetric {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
+        background: #ffffff;
         padding: 25px;
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-        transition: transform 0.3s ease;
-    }
-    
-    .stMetric:hover {
-        transform: translateY(-5px);
+        border-radius: 15px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
     
     .prediction-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #34495e;
         color: white;
         padding: 30px;
-        border-radius: 25px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         text-align: center;
         margin: 20px 0;
-    }
-    
-    .sidebar .sidebar-content {
-        background-color: #ffffff;
     }
     
     .insight-box {
         background: white;
         padding: 20px;
-        border-radius: 15px;
-        border-left: 6px solid #667eea;
+        border-radius: 12px;
+        border-left: 5px solid #34495e;
         margin-bottom: 20px;
-    }
-    
-    .stButton>button {
-        background: linear-gradient(to right, #667eea, #764ba2);
-        color: white;
-        border-radius: 30px;
-        border: none;
-        padding: 10px 25px;
-        font-weight: 600;
-        transition: all 0.3s;
-    }
-    
-    .stButton>button:hover {
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        transform: scale(1.05);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -81,105 +81,102 @@ st.markdown("""
 @st.cache_data
 def load_data():
     df = pd.read_csv('social_media_vs_productivity.csv')
-    df = df[df['job_type'] == 'Student'].copy()
-    for col in ['actual_productivity_score', 'stress_level', 'sleep_hours']:
-        df[col].fillna(df[col].median(), inplace=True)
-    df.dropna(subset=['daily_social_media_time', 'actual_productivity_score'], inplace=True)
+    df.columns = df.columns.str.strip()
+    cols_to_fix = ['actual_productivity_score', 'stress_level', 'sleep_hours', 'daily_social_media_time']
+    for col in cols_to_fix:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+            df[col].fillna(df[col].median(), inplace=True)
     df.drop_duplicates(inplace=True)
     return df
 
-df = load_data()
+df_full = load_data()
 
-# --- HEADER SECTION ---
-with st.container():
-    st.title("🚀 Student Productivity Insight")
-    st.markdown("""
-    Use this interactive tool to explore how social media habits impact academic performance. 
-    **How to use:** Start by selecting a platform in the sidebar, then browse the tabs to see data trends, 
-    predict your own score, and read our final conclusions.
-    """)
-    st.markdown("---")
+# --- HEADER ---
+st.title("Productivity & Well-being Research")
+st.markdown("""
+This research investigates digital habits across different professions.
+Data Source: **Mahdi Mashayekhi (Kaggle)**
+""")
+st.markdown("---")
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.header("Platform Analysis")
+    st.header("Global Filters")
     platform_choice = st.radio(
-        "Select a Social Platform:",
-        options=["All Platforms"] + sorted(df['social_platform_preference'].unique().tolist())
+        "Select Platform Filter:",
+        options=["All Platforms"] + sorted(df_full['social_platform_preference'].unique().tolist())
     )
     st.markdown("---")
-    st.info("💡 **Guide:** Selecting a specific platform will update all the charts and the 'Hour Cost' calculation to show data only for students who prefer that app.")
+    st.write("**Navigation Guide:** Use the tabs to switch between specific student analysis and broader professional comparisons.")
 
 if platform_choice == "All Platforms":
-    filtered_df = df
+    current_df = df_full
 else:
-    filtered_df = df[df['social_platform_preference'] == platform_choice]
+    current_df = df_full[df_full['social_platform_preference'] == platform_choice]
 
-# --- MAIN DASHBOARD ---
-tab1, tab2, tab3 = st.tabs(["📊 Data Trends", "🔮 Predictor", "📍 Conclusion"])
+# --- MAIN TABS ---
+tab1, tab2, tab3 = st.tabs([
+    "🎓 Student Focus & Prediction", 
+    "💼 Professional Comparison",
+    "🔬 Further Analysis"
+])
+
+# Helper for dynamic naming
+platform_name = "social media in general" if platform_choice == "All Platforms" else platform_choice
 
 with tab1:
-    st.markdown("### Step 1: Observe the Trends")
-    st.write("First, let's look at the raw data. Each dot represents a student, and the red line shows the average trend.")
+    df_student = current_df[current_df['job_type'] == 'Student'].copy()
     
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Total Sample", f"{len(filtered_df):,}", "Students")
-    with col2:
-        st.metric("Avg. Usage", f"{filtered_df['daily_social_media_time'].mean():.1f} hrs", "Daily")
-    with col3:
-        st.metric("Focus Score", f"{filtered_df['actual_productivity_score'].mean():.1f}/10", "Avg.")
-
-    st.markdown("<br>", unsafe_allow_html=True)
+    # 1. Trends Section
+    st.subheader("Section 1: Data Trends")
+    st.write(f"How does time spent on {platform_choice} affect student productivity?")
     
-    # INTERACTIVE PLOTLY CHART
-    st.subheader("The Productivity Spectrum")
-    
-    # Regression Math
-    x = filtered_df['daily_social_media_time']
-    y = filtered_df['actual_productivity_score']
-    m, k = np.polyfit(x, y, 1)
-    
-    fig = px.scatter(
-        filtered_df, 
-        x='daily_social_media_time', 
-        y='actual_productivity_score',
-        hover_data=['social_platform_preference', 'sleep_hours', 'stress_level'],
-        labels={'daily_social_media_time': 'Usage (Hrs)', 'actual_productivity_score': 'Productivity'},
-        opacity=0.4,
-        template='plotly_white'
-    )
-    # Set uniform color for points
-    fig.update_traces(marker=dict(color='#3498db'))
-    
-    # Add Trend Line
-    x_range = np.linspace(0, x.max(), 100)
-    y_range = m * x_range + k
-    fig.add_trace(go.Scatter(
-        x=x_range, 
-        y=y_range, 
-        mode='lines', 
-        name='Trend (Best Fit Line)', 
-        line=dict(color='red', width=3)
-    ))
-    
-    fig.update_layout(
-        height=500, 
-        margin=dict(l=0, r=0, t=30, b=0),
-        showlegend=False
-    )
-    st.plotly_chart(fig, use_container_width=True)
-
-with tab2:
-    st.markdown("### Step 2: Test the Model")
-    st.write("Now that we've seen the data, let's see where you might fit into the pattern.")
-    
-    c1, c2 = st.columns([1, 1])
+    c1, c2, c3 = st.columns(3)
     with c1:
+        st.metric("Student Sample", f"{len(df_student):,}")
+    with c2:
+        st.metric("Average Social Media Usage", f"{df_student['daily_social_media_time'].mean():.1f} hrs")
+    with c3:
+        st.metric("Average Productivity Score", f"{df_student['actual_productivity_score'].mean():.1f}/10")
+
+    # Regression Math
+    x = df_student['daily_social_media_time']
+    y = df_student['actual_productivity_score']
+    
+    if len(x) > 1:
+        m, k = np.polyfit(x, y, 1)
+        correlation = x.corr(y)
+    else:
+        m, k, correlation = 0, 0, 0
+    
+    fig1 = px.scatter(
+        df_student, x='daily_social_media_time', y='actual_productivity_score',
+        labels={'daily_social_media_time': 'Social Media Usage (Hours)', 'actual_productivity_score': 'Productivity Score'},
+        opacity=0.4, template='plotly_white'
+    )
+    fig1.update_traces(marker=dict(color='#2980b9'))
+    
+    if len(x) > 0:
+        x_range = np.linspace(0, x.max(), 100)
+        fig1.add_trace(go.Scatter(x=x_range, y=m*x_range+k, mode='lines', name='Trend', line=dict(color='#e74c3c', width=3)))
+    
+    fig1.update_layout(height=450, showlegend=False)
+    st.plotly_chart(fig1, use_container_width=True)
+
+    st.markdown("---")
+
+    # 2. Prediction Section
+    st.subheader("Section 2: Personal Productivity Predictor")
+    st.write(f"Predicting your focus score based on {platform_choice} usage habits.")
+    
+    ca, cb = st.columns([1, 1])
+    with ca:
         user_hours = st.select_slider(
-            "Slide to your average social media usage (Hrs/Day):",
+            "Enter daily usage (Hrs):",
             options=np.round(np.arange(0, 10.5, 0.5), 1),
-            value=2.0
+            value=2.0,
+            key="student_slider"
         )
         
         predicted_score = m * user_hours + k
@@ -188,40 +185,93 @@ with tab2:
         st.markdown(f"""
         <div class="prediction-card">
             <h1 style="color: white; font-size: 60px;">{predicted_score:.1f}</h1>
-            <p style="font-size: 20px;">Predicted Productivity Score</p>
-            <p style="opacity: 0.8;">Based on your {user_hours}h usage profile</p>
+            <p style="font-size: 20px;">Predicted Focus Score</p>
+            <p style="opacity: 0.8;">Based on {user_hours} hours of {platform_choice} usage</p>
         </div>
         """, unsafe_allow_html=True)
 
-    with c2:
-        st.markdown("<br><br>", unsafe_allow_html=True)
+    with cb:
+        st.markdown("<br>", unsafe_allow_html=True)
         st.markdown(f"""
         <div class="insight-box">
-            <h4>The "Hour Cost"</h4>
-            <p>The model shows that every additional hour of social media is linked to a <b>{abs(m):.2f} point</b> drop in focus.</p>
+            <h4>Impact Analysis</h4>
+            <p>The model reveals that for every additional hour spent on {platform_choice}, focus typically drops by <b>{abs(m):.2f} points</b>.</p>
         </div>
         """, unsafe_allow_html=True)
 
-with tab3:
-    st.markdown("### Step 3: Read the Conclusion")
-    st.write("Finally, we summarize the relationship between usage and focus.")
-    st.subheader("Final Summary & Findings")
+    st.markdown("---")
+
+    # 3. Conclusion Section
+    st.subheader("Section 3: Findings & Conclusion")
+    
     st.markdown(f"""
-    ### 1. The Numbers Don't Lie
-    Based on this specific data, there is a clear link: **more social media time = lower productivity.** 
-    - The model shows a 'Pearson Correlation' of about **-0.62**. In simple terms, this means that as one goes up, the other almost always goes down.
-    - For every **extra hour** you spend scrolling, your productivity score drops by about **{abs(m):.2f} points** (on a 10-point scale).
+    **1. Productivity Link:** Our investigation shows a measurable link between time spent on **{platform_name}** and productivity in students. The correlation for this specific group is approximately **{correlation:.2f}**.
 
-    ### 2. A More Human Perspective (The Stress-Relief Hypothesis)
-    While the numbers show a drop, we have to ask *why*. Is social media *causing* the low productivity? Or is it something else?
-    - **The Coping Mechanism:** It’s possible that when we feel stressed or unproductive, we turn to social media to 'escape' or 'relax.' 
-    - This means that for some students, high social media use might be a **symptom** of stress, not the original cause.
+    **2. Relationship Nuance:** Even though we observe higher stress levels for high **{platform_name}** usage, we cannot say that high usage *causes* stress. It is highly possible that students turn to this platform as a **coping mechanism** to escape academic pressure.
 
-    ### 3. Final Takeaway
-    In conclusion, while social media usage is statistically linked to decreased productivity in this study, the underlying reasons are likely a complex mix of distraction and stress response. Keeping an eye on your screen time is a great first step toward getting more done!
+    **3. Final Takeaway:** Balanced digital consumption is key. For **{platform_name}**, maintaining a limit of under 2 hours daily is statistically associated with the highest productivity output in this study.
+    """)
+
+with tab2:
+    st.subheader("Professional Occupation Comparison")
+    st.write(f"How does productivity vary with {platform_choice} usage across different job types?")
+    
+    # BACK TO SCATTER PLOT as requested
+    fig_comp = px.scatter(
+        current_df, 
+        x='daily_social_media_time', 
+        y='actual_productivity_score',
+        color='job_type',
+        labels={'job_type': 'Occupation', 'actual_productivity_score': 'Productivity Score', 'daily_social_media_time': 'Social Media Usage (Hours)'},
+        template='plotly_white',
+        opacity=0.5
+    )
+    fig_comp.update_layout(height=500)
+    st.plotly_chart(fig_comp, use_container_width=True)
+    
+    st.info(f"""
+    **Explaining the Chart:** Each dot represents an individual. By coloring the dots by occupation, we can see 
+    if certain groups (like Students in blue) follow a different pattern than professionals (like IT or Finance) 
+    when using **{platform_choice}**.
+    """)
+
+with tab3:
+    df_insight = current_df[current_df['job_type'] == 'Student'].copy()
+    st.subheader("Deep-Dive Analysis (Student Data Only)")
+    
+    st.markdown(f"#### Research Insight 1: {platform_choice} vs. Stress")
+    fig2 = px.box(
+        df_insight, x='daily_social_media_time', y='stress_level', orientation='h', color='stress_level',
+        labels={'stress_level': 'Stress Level', 'daily_social_media_time': 'Usage (Hrs)'},
+        template='plotly_white', color_discrete_sequence=px.colors.sequential.Tealgrn
+    )
+    fig2.update_layout(height=400, showlegend=False)
+    st.plotly_chart(fig2, use_container_width=True)
+    
+    # DYNAMIC CONCLUSION FOR STRESS
+    st.info(f"""
+    **Observation:** The data shows that higher usage of **{platform_name}** generally aligns with higher stress categories. 
+    However, we cannot conclude that **{platform_name}** *causes* stress. It is possible that the relationship is reversed 
+    (stressed students use this platform to cope) or that the relationship is indirect.
     """)
     
-    st.image("https://img.icons8.com/bubbles/200/000000/student-male.png")
+    st.markdown("---")
+    
+    st.markdown("#### Research Insight 2: Sleep Duration vs. Focus")
+    fig3 = px.scatter(
+        df_insight, x='sleep_hours', y='actual_productivity_score',
+        labels={'sleep_hours': 'Sleep Duration (Hours)', 'actual_productivity_score': 'Productivity Score'},
+        template='plotly_white', opacity=0.3
+    )
+    fig3.update_traces(marker=dict(color='#16a085'))
+    fig3.update_layout(height=400)
+    st.plotly_chart(fig3, use_container_width=True)
+    
+    # DYNAMIC CONCLUSION FOR SLEEP
+    st.info(f"""
+    **Observation:** By looking at the distribution of points for **{platform_name}** users, we can see how sleep 
+    habits relate to productivity. Most students with high focus scores also tend to fall into the healthy sleep 
+    range, suggesting that rest plays a key role in academic success.
+    """)
 
-st.markdown("---")
-st.caption("✨ Kujenga Final Project ")
+st.caption("Final Project | Productivity Research Study")
