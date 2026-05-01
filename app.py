@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 # --- PAGE SETUP ---
 st.set_page_config(
     page_title="Productivity & Well-being Research",
-    page_icon="📝",
+    
     layout="wide"
 )
 
