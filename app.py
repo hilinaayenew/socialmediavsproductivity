@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 # --- PAGE SETUP ---
 st.set_page_config(
     page_title="Productivity & Well-being Research",
-    
+    page_icon="📝",
     layout="wide"
 )
 
@@ -82,11 +82,15 @@ st.markdown("""
 def load_data():
     df = pd.read_csv('social_media_vs_productivity.csv')
     df.columns = df.columns.str.strip()
+    
+    # Cleaning missing values (Fixing ChainedAssignmentError)
     cols_to_fix = ['actual_productivity_score', 'stress_level', 'sleep_hours', 'daily_social_media_time']
     for col in cols_to_fix:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
-            df[col].fillna(df[col].median(), inplace=True)
+            median_val = df[col].median()
+            df[col] = df[col].fillna(median_val) # Fixed syntax
+            
     df.drop_duplicates(inplace=True)
     return df
 
@@ -128,6 +132,9 @@ platform_name = "social media in general" if platform_choice == "All Platforms" 
 with tab1:
     df_student = current_df[current_df['job_type'] == 'Student'].copy()
     
+    # Ensure no NaN/Inf for np.polyfit to avoid LinAlgError
+    df_student = df_student.dropna(subset=['daily_social_media_time', 'actual_productivity_score'])
+    
     # 1. Trends Section
     st.subheader("Section 1: Data Trends")
     st.write(f"How does time spent on {platform_choice} affect student productivity?")
@@ -136,17 +143,23 @@ with tab1:
     with c1:
         st.metric("Student Sample", f"{len(df_student):,}")
     with c2:
-        st.metric("Average Social Media Usage", f"{df_student['daily_social_media_time'].mean():.1f} hrs")
+        avg_usage = df_student['daily_social_media_time'].mean() if not df_student.empty else 0
+        st.metric("Average Social Media Usage", f"{avg_usage:.1f} hrs")
     with c3:
-        st.metric("Average Productivity Score", f"{df_student['actual_productivity_score'].mean():.1f}/10")
+        avg_prod = df_student['actual_productivity_score'].mean() if not df_student.empty else 0
+        st.metric("Average Productivity Score", f"{avg_prod:.1f}/10")
 
     # Regression Math
     x = df_student['daily_social_media_time']
     y = df_student['actual_productivity_score']
     
-    if len(x) > 1:
-        m, k = np.polyfit(x, y, 1)
-        correlation = x.corr(y)
+    # Safety check for polyfit
+    if len(x) > 1 and not (x.max() == x.min()):
+        try:
+            m, k = np.polyfit(x, y, 1)
+            correlation = x.corr(y)
+        except:
+            m, k, correlation = 0, 0, 0
     else:
         m, k, correlation = 0, 0, 0
     
@@ -157,7 +170,7 @@ with tab1:
     )
     fig1.update_traces(marker=dict(color='#2980b9'))
     
-    if len(x) > 0:
+    if not df_student.empty:
         x_range = np.linspace(0, x.max(), 100)
         fig1.add_trace(go.Scatter(x=x_range, y=m*x_range+k, mode='lines', name='Trend', line=dict(color='#e74c3c', width=3)))
     
@@ -216,7 +229,6 @@ with tab2:
     st.subheader("Professional Occupation Comparison")
     st.write(f"How does productivity vary with {platform_choice} usage across different job types?")
     
-    # BACK TO SCATTER PLOT as requested
     fig_comp = px.scatter(
         current_df, 
         x='daily_social_media_time', 
@@ -248,7 +260,6 @@ with tab3:
     fig2.update_layout(height=400, showlegend=False)
     st.plotly_chart(fig2, use_container_width=True)
     
-    # DYNAMIC CONCLUSION FOR STRESS
     st.info(f"""
     **Observation:** The data shows that higher usage of **{platform_name}** generally aligns with higher stress categories. 
     However, we cannot conclude that **{platform_name}** *causes* stress. It is possible that the relationship is reversed 
@@ -267,7 +278,6 @@ with tab3:
     fig3.update_layout(height=400)
     st.plotly_chart(fig3, use_container_width=True)
     
-    # DYNAMIC CONCLUSION FOR SLEEP
     st.info(f"""
     **Observation:** By looking at the distribution of points for **{platform_name}** users, we can see how sleep 
     habits relate to productivity. Most students with high focus scores also tend to fall into the healthy sleep 
