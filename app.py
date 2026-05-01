@@ -224,4 +224,4 @@ with tab3:
     st.image("https://img.icons8.com/bubbles/200/000000/student-male.png")
 
 st.markdown("---")
-st.caption("✨ Kujenga Final Project | Data Science for a Better Future")
+st.caption("✨ Kujenga Final Project ")
